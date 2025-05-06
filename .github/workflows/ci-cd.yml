@@ -46,11 +46,8 @@ jobs:
         run: terraform fmt -check
 
       - name: Terraform init
-        working-directory: .
-        run: |
-          terraform init \
-            -backend-config="key=${{ env.TF_ENV }}/terraform.tfstate" \
-            -input=false
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform init -backend-config="key=${{ env.TF_ENV }}/terraform.tfstate"
 
       - name: Terraform plan
         working-directory: .
@@ -82,16 +79,13 @@ jobs:
           terraform_version: "1.5.0"
 
       - name: Terraform init
-        working-directory: .
-        run: |
-          terraform init \
-            -backend-config="key=${{ env.TF_ENV }}/terraform.tfstate" \
-            -input=false
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform init -backend-config="key=${{ env.TF_ENV }}/terraform.tfstate"
 
       - name: Terraform Apply
         if: ${{ github.event.inputs.action != 'destroy' }}
-        working-directory: .
-        run: terraform apply -auto-approve
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform apply -auto-approve -lock=false
 
       - name: Terraform Destroy
         if: ${{ github.event.inputs.action == 'destroy' }}
