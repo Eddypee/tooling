@@ -1,8 +1,8 @@
-variable "bucket" {
-  description = "The name of the S3 bucket"
-  type        = string
-  default     = "class38-terraform-backend-bucket-project"
-}
+# variable "bucket" {
+  # description = "The name of the S3 bucket"
+  # type        = string
+  # default     = "class38-terraform-backend-bucket-project"
+# }
 
 variable "table" {
   description = "The name of the DynamoDB table"
