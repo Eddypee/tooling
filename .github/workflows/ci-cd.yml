@@ -1,5 +1,3 @@
-name: Terraform-AWS-Infra-Deployment
-
 on:
   push:
     branches: [main]
@@ -25,9 +23,54 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  plan:
-    name: 🌱 Plan
+  bootstrap:
+    name: Bootstrap S3 & DynamoDB
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ github.event.inputs.region || 'us-east-2' }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.0"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Check if backend resources exist
+        id: check
+        run: |
+          BUCKET_EXISTS=$(aws s3api head-bucket --bucket class38-terraform-backend-bucket-project 2>&1 || true)
+          TABLE_EXISTS=$(aws dynamodb describe-table --table-name terraform-state-locking 2>&1 || true)
+
+          if [[ "$BUCKET_EXISTS" == *"Not Found"* || "$BUCKET_EXISTS" == *"NoSuchBucket"* ]]; then
+            echo "bucket_exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "bucket_exists=true" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ "$TABLE_EXISTS" == *"ResourceNotFoundException"* ]]; then
+            echo "table_exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "table_exists=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Terraform Init and Apply (if needed)
+        if: steps.check.outputs.bucket_exists == 'false' || steps.check.outputs.table_exists == 'false'
+        working-directory: modules/s3-dynamodb
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    needs: bootstrap
     env:
       TF_ENV:     ${{ github.event.inputs.environment || 'prod' }}
       AWS_REGION: ${{ github.event.inputs.region      || 'us-east-2' }}
@@ -38,7 +81,7 @@ jobs:
         with:
           terraform_version: "1.5.0"
 
-      - name: ✅ Configure AWS credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -55,15 +98,15 @@ jobs:
         run: terraform plan -lock=false
 
   approve:
-    name: 🔒 Await Approval
+    name: Await Approval
     runs-on: ubuntu-latest
     needs: plan
     environment: ${{ github.event.inputs.environment || 'prod' }}
     steps:
-      - run: echo "✅ Please go to the Actions UI and Approve or Reject."
+      - run: echo "Please go to the Actions UI and Approve or Reject."
 
   deploy:
-    name: 🚀 Deploy
+    name: Deploy
     runs-on: ubuntu-latest
     needs: approve
     env:
@@ -76,7 +119,7 @@ jobs:
         with:
           terraform_version: "1.5.0"
 
-      - name: ✅ Configure AWS credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
