@@ -49,9 +49,7 @@ jobs:
         run: terraform fmt -check
 
       - name: Terraform init
-        run: terraform init \
-          -backend-config="key=${{ env.TF_ENV }}/terraform.tfstate" \
-          -input=false
+        run: terraform init -backend-config="key=${{ env.TF_ENV }}/terraform.tfstate"
 
       - name: Terraform plan
         run: terraform plan -lock=false
@@ -86,9 +84,7 @@ jobs:
           aws-region:            ${{ env.AWS_REGION }}
 
       - name: Terraform init
-        run: terraform init \
-          -backend-config="key=${{ env.TF_ENV }}/terraform.tfstate" \
-          -input=false
+        run: terraform init -backend-config="key=${{ env.TF_ENV }}/terraform.tfstate"
 
       - name: Terraform Apply
         if: ${{ github.event.inputs.action != 'destroy' }}
