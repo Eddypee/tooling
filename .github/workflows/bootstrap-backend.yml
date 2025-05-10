@@ -55,6 +55,11 @@ jobs:
         working-directory: ./bootstrap-backend
         run: terraform init
 
-      - name: Terraform Apply
+      - name: Terraform Action (apply or destroy)
         working-directory: ./bootstrap-backend
-        run: terraform apply -auto-approve
+        run: |
+          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
+            terraform destroy -auto-approve
+          else
+            terraform apply -auto-approve
+          fi
