@@ -2,6 +2,30 @@ name: Bootstrap Terraform Backend
 
 on:
   workflow_dispatch:
+        inputs:
+          environment:
+            description: "Deployment Environment (dev, qa, uat, prod)"
+            required: true
+            default: "prod"
+            type: choice
+            options:
+              - dev
+              - prod
+              - qa
+              - uat
+          region:
+            description: "AWS Region"
+            required: true
+            default: "us-east-2"
+          action:
+            description: "Terraform action: apply (default) or destroy"
+            required: false
+            default: "apply"
+            type: choice
+            options:
+              - apply
+              - destroy
+        
 
 jobs:
   bootstrap:
@@ -9,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AWS_REGION: us-east-2
+      AWS_ACCOUNT_ID: 222353955460
 
     steps:
       - name: Checkout Repo
