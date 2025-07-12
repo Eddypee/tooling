@@ -1,3 +1,4 @@
+/*
 terraform {
   backend "s3" {
     bucket         = "class38-terraform-backend-bucket-project-edna"
@@ -7,3 +8,5 @@ terraform {
     encrypt        = true
   }
 }
+
+*/
